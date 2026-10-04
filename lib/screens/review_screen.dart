@@ -28,6 +28,16 @@ class ReviewScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _addShiftManually(BuildContext context, WidgetRef ref) async {
+    final newShift = await showDialog<Shift>(
+      context: context,
+      builder: (_) => const EditShiftModal(),
+    );
+    if (newShift != null) {
+      ref.read(rosterProvider.notifier).addShift(newShift);
+    }
+  }
+
   Future<void> _confirmAndSave(BuildContext context, WidgetRef ref) async {
     final state = ref.read(rosterProvider);
     final box = Hive.box<Shift>('shifts');
@@ -105,23 +115,45 @@ class ReviewScreen extends ConsumerWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.all(16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: state.extractedShifts.isEmpty
-                          ? null
-                          : () => _confirmAndSave(context, ref),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.surface,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () => _addShiftManually(context, ref),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add Shift Manually'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          minimumSize: const Size(double.infinity, 0),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
-                      child: const Text('Confirm & Save',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: state.extractedShifts.isEmpty
+                              ? null
+                              : () => _confirmAndSave(context, ref),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: AppColors.surface,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text(
+                            'Confirm & Save',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

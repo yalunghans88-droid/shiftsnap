@@ -8,9 +8,9 @@ import '../theme/text_styles.dart';
 /// Pop-up modal for editing a single shift.
 /// Source: DESIGN SYSTEM Step D — COMPONENT 5
 class EditShiftModal extends StatefulWidget {
-  final Shift initial;
+  final Shift? initial;
 
-  const EditShiftModal({super.key, required this.initial});
+  const EditShiftModal({super.key, this.initial});
 
   @override
   State<EditShiftModal> createState() => _EditShiftModalState();
@@ -26,12 +26,16 @@ class _EditShiftModalState extends State<EditShiftModal> {
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController(text: widget.initial.title);
-    _startController = TextEditingController(text: widget.initial.startTime);
-    _endController = TextEditingController(text: widget.initial.endTime);
-    _descController =
-        TextEditingController(text: widget.initial.description ?? '');
-    _date = widget.initial.date;
+    final initial = widget.initial;
+    final now = DateTime.now();
+    final defaultStart = '${now.hour.toString().padLeft(2, '0')}:00';
+    final defaultEnd = '${(now.hour + 1).toString().padLeft(2, '0')}:00';
+
+    _titleController = TextEditingController(text: initial?.title ?? '');
+    _startController = TextEditingController(text: initial?.startTime ?? defaultStart);
+    _endController = TextEditingController(text: initial?.endTime ?? defaultEnd);
+    _descController = TextEditingController(text: initial?.description ?? '');
+    _date = initial?.date ?? DateTime(now.year, now.month, now.day);
   }
 
   @override
@@ -69,7 +73,7 @@ class _EditShiftModalState extends State<EditShiftModal> {
       description: _descController.text.trim().isEmpty
           ? null
           : _descController.text.trim(),
-      confirmed: widget.initial.confirmed,
+      confirmed: widget.initial?.confirmed ?? false,
     );
 
     Navigator.of(context).pop(updated);
