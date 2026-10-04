@@ -10,11 +10,13 @@ import '../theme/text_styles.dart';
 class NextShiftHeroCard extends StatelessWidget {
   final Shift shift;
   final String countdown;
+  final VoidCallback? onTap;
 
   const NextShiftHeroCard({
     super.key,
     required this.shift,
     required this.countdown,
+    this.onTap,
   });
 
   @override
@@ -22,34 +24,37 @@ class NextShiftHeroCard extends StatelessWidget {
     final dateStr = DateFormat('EEEE, MMM d').format(shift.date);
     final timeStr = '${shift.startTime} - ${shift.endTime}';
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: const Border(
-          left: BorderSide(color: AppColors.accent, width: 6),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: const Border(
+            left: BorderSide(color: AppColors.accent, width: 6),
           ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Your Next Shift', style: AppTextStyles.caption),
-          const SizedBox(height: 4),
-          Text(dateStr, style: AppTextStyles.highlight),
-          const SizedBox(height: 4),
-          Text(timeStr, style: AppTextStyles.body),
-          const SizedBox(height: 6),
-          Text(countdown, style: AppTextStyles.countdown),
-        ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Your Next Shift', style: AppTextStyles.caption),
+            const SizedBox(height: 4),
+            Text(dateStr, style: AppTextStyles.highlight),
+            const SizedBox(height: 4),
+            Text(timeStr, style: AppTextStyles.body),
+            const SizedBox(height: 6),
+            Text(countdown, style: AppTextStyles.countdown),
+          ],
+        ),
       ),
     );
   }
@@ -59,37 +64,41 @@ class NextShiftHeroCard extends StatelessWidget {
 /// Source: DESIGN SYSTEM Step D — COMPONENT 3
 class ShiftCard extends StatelessWidget {
   final Shift shift;
+  final VoidCallback? onTap;
 
-  const ShiftCard({super.key, required this.shift});
+  const ShiftCard({super.key, required this.shift, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final dateStr = DateFormat('EEE, MMM d').format(shift.date);
     final timeStr = '${shift.startTime} - ${shift.endTime}';
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            dateStr,
-            style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold),
-          ),
-          Text(timeStr, style: AppTextStyles.body),
-        ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              dateStr,
+              style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold),
+            ),
+            Text(timeStr, style: AppTextStyles.body),
+          ],
+        ),
       ),
     );
   }
