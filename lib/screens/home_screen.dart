@@ -23,6 +23,7 @@ class HomeScreen extends ConsumerWidget {
     final upcomingShifts = ref.watch(upcomingShiftsProvider);
     final hasAnyShift = nextShift != null || upcomingShifts.isNotEmpty;
 
+
     return Scaffold(
       key: scaffoldKey,
       backgroundColor: AppColors.surface,
@@ -31,7 +32,7 @@ class HomeScreen extends ConsumerWidget {
       ),
       drawer: const SettingsDrawer(),
       body: hasAnyShift
-          ? _buildWithShifts(nextShift, upcomingShifts)
+          ? _buildWithShifts(context, ref, nextShift, upcomingShifts)
           : const EmptyStateCard(),
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
@@ -59,8 +60,6 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  /// Opens the edit modal with a blank shift, then saves it directly
-  /// to the Hive box if the user confirms.
   Future<void> _addShiftManually(BuildContext context, WidgetRef ref) async {
     final newShift = await showDialog<Shift>(
       context: context,
@@ -85,7 +84,128 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildWithShifts(Shift? nextShift, List<Shift> upcomingShifts) {
+  /// Opens a bottom sheet offering Edit and Delete for a saved shift.
+  Future<void> _showShiftActions(
+    BuildContext context,
+    WidgetRef ref,
+    Shift shift,
+  ) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.black26,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  shift.title,
+                  style: AppTextStyles.sectionTitle.copyWith(fontSize: 16),
+                ),
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.edit, color: AppColors.primary),
+                title: const Text('Edit shift'),
+                onTap: () async {
+                  Navigator.of(sheetContext).pop();
+                  await _editSavedShift(context, ref, shift);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete, color: AppColors.error),
+                title: const Text('Delete shift'),
+                onTap: () async {
+                  Navigator.of(sheetContext).pop();
+                  await _confirmDelete(context, ref, shift);
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _editSavedShift(
+    BuildContext context,
+    WidgetRef ref,
+    Shift shift,
+  ) async {
+    final updated = await showDialog<Shift>(
+      context: context,
+      builder: (_) => EditShiftModal(initial: shift),
+    );
+    if (updated == null) return;
+
+    await updateShiftInHive(shift, updated);
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Shift updated.')),
+    );
+  }
+
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    Shift shift,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete this shift?'),
+        content: Text(
+          '${shift.title} on '
+          '${shift.date.year}-${shift.date.month.toString().padLeft(2, '0')}-${shift.date.day.toString().padLeft(2, '0')} '
+          'will be removed.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await deleteShiftFromHive(shift.key);
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Shift deleted.')),
+    );
+  }
+
+  Widget _buildWithShifts(
+    BuildContext context,
+    WidgetRef ref,
+    Shift? nextShift,
+    List<Shift> upcomingShifts,
+  ) {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,6 +220,7 @@ class HomeScreen extends ConsumerWidget {
             NextShiftHeroCard(
               shift: nextShift,
               countdown: formatCountdown(nextShift),
+              onTap: () => _showShiftActions(context, ref, nextShift),
             ),
           const SizedBox(height: 24),
           const Padding(
@@ -107,7 +228,12 @@ class HomeScreen extends ConsumerWidget {
             child: Text('Upcoming Shift', style: AppTextStyles.sectionTitle),
           ),
           const SizedBox(height: 8),
-          ...upcomingShifts.map((s) => ShiftCard(shift: s)),
+          ...upcomingShifts.map(
+            (s) => ShiftCard(
+              shift: s,
+              onTap: () => _showShiftActions(context, ref, s),
+            ),
+          ),
           const SizedBox(height: 120),
         ],
       ),

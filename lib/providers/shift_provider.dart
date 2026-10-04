@@ -8,17 +8,21 @@ final shiftsBoxProvider = Provider<Box<Shift>>((ref) {
   return Hive.box<Shift>('shifts');
 });
 
-/// A reactive list of all shifts, sorted by start time ascending.
-final allShiftsProvider = Provider<List<Shift>>((ref) {
+/// A reactive stream of all shifts, sorted chronologically.
+/// Re-emits whenever the Hive box changes (add, update, delete).
+final allShiftsProvider = StreamProvider<List<Shift>>((ref) {
   final box = ref.watch(shiftsBoxProvider);
-  final shifts = box.values.toList()
-    ..sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
-  return shifts;
+  return box.watch().map((_) {
+    final list = box.values.toList()
+      ..sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
+    return list;
+  });
 });
 
 /// The next upcoming shift (first shift whose end time is in the future).
 final nextShiftProvider = Provider<Shift?>((ref) {
-  final shifts = ref.watch(allShiftsProvider);
+  final async = ref.watch(allShiftsProvider);
+  final shifts = async.value ?? const <Shift>[];
   final now = DateTime.now();
   for (final shift in shifts) {
     if (shift.endDateTime.isAfter(now)) {
@@ -30,7 +34,8 @@ final nextShiftProvider = Provider<Shift?>((ref) {
 
 /// All upcoming shifts AFTER the next one.
 final upcomingShiftsProvider = Provider<List<Shift>>((ref) {
-  final shifts = ref.watch(allShiftsProvider);
+  final async = ref.watch(allShiftsProvider);
+  final shifts = async.value ?? const <Shift>[];
   final next = ref.watch(nextShiftProvider);
   final now = DateTime.now();
 
@@ -53,4 +58,24 @@ String formatCountdown(Shift shift) {
     return 'in ${diff.inHours} hour${diff.inHours == 1 ? '' : 's'}';
   }
   return 'in ${diff.inMinutes} min';
+}
+
+/// Replace an existing shift in Hive with an updated version.
+Future<void> updateShiftInHive(Shift original, Shift updated) async {
+  final box = Hive.box<Shift>('shifts');
+  final replacement = Shift(
+    title: updated.title,
+    date: updated.date,
+    startTime: updated.startTime,
+    endTime: updated.endTime,
+    description: updated.description,
+    confirmed: true,
+  );
+  await box.put(original.key, replacement);
+}
+
+/// Delete a shift by its Hive key.
+Future<void> deleteShiftFromHive(dynamic key) async {
+  final box = Hive.box<Shift>('shifts');
+  await box.delete(key);
 }
