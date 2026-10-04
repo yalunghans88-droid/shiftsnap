@@ -63,101 +63,154 @@ class ReviewScreen extends ConsumerWidget {
     Navigator.of(context).popUntil((r) => r.isFirst);
   }
 
+  /// Called by the back arrow. If there are unsaved shifts, ask first.
+  Future<bool> _confirmDiscard(BuildContext context, WidgetRef ref) async {
+    final state = ref.read(rosterProvider);
+    if (state.extractedShifts.isEmpty) return true;
+
+    final discard = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Discard extracted shifts?'),
+        content: Text(
+          'You have ${state.extractedShifts.length} '
+          'unsaved shift${state.extractedShifts.length == 1 ? '' : 's'}. '
+          'If you leave now, they will be lost.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Keep reviewing'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Discard'),
+          ),
+        ],
+      ),
+    );
+
+    if (discard == true) {
+      ref.read(rosterProvider.notifier).reset();
+    }
+    return discard == true;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(rosterProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: const ShiftSnapAppBar(showBack: true),
-      body: state.isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.accent),
-            )
-          : Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+    return PopScope(
+      canPop: state.extractedShifts.isEmpty,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final shouldLeave = await _confirmDiscard(context, ref);
+        if (shouldLeave && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.surface,
+        appBar: ShiftSnapAppBar(
+          showBack: true,
+          onMenuTap: () async {
+            final shouldLeave = await _confirmDiscard(context, ref);
+            if (shouldLeave && context.mounted) {
+              Navigator.of(context).pop();
+            }
+          },
+        ),
+        body: state.isLoading
+            ? const Center(
+                child: CircularProgressIndicator(color: AppColors.accent),
+              )
+            : Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Review Shift',
+                            style: AppTextStyles.sectionTitle),
+                      ],
+                    ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Review Shift',
-                          style: AppTextStyles.sectionTitle),
-                    ],
+                  Expanded(
+                    child: state.extractedShifts.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'No shifts to review.',
+                              style: AppTextStyles.body,
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.only(bottom: 100),
+                            itemCount: state.extractedShifts.length,
+                            itemBuilder: (context, i) {
+                              final shift = state.extractedShifts[i];
+                              return _ReviewShiftCard(
+                                shift: shift,
+                                onEdit: () =>
+                                    _editShift(context, ref, i, shift),
+                                onDelete: () => ref
+                                    .read(rosterProvider.notifier)
+                                    .removeShift(i),
+                              );
+                            },
+                          ),
                   ),
-                ),
-                Expanded(
-                  child: state.extractedShifts.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'No shifts to review.',
-                            style: AppTextStyles.body,
-                          ),
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.only(bottom: 100),
-                          itemCount: state.extractedShifts.length,
-                          itemBuilder: (context, i) {
-                            final shift = state.extractedShifts[i];
-                            return _ReviewShiftCard(
-                              shift: shift,
-                              onEdit: () =>
-                                  _editShift(context, ref, i, shift),
-                              onDelete: () => ref
-                                  .read(rosterProvider.notifier)
-                                  .removeShift(i),
-                            );
-                          },
-                        ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: () => _addShiftManually(context, ref),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Add Shift Manually'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          side: const BorderSide(color: AppColors.primary),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          minimumSize: const Size(double.infinity, 0),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: state.extractedShifts.isEmpty
-                              ? null
-                              : () => _confirmAndSave(context, ref),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: AppColors.surface,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: () => _addShiftManually(context, ref),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Add Shift Manually'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            side: const BorderSide(color: AppColors.primary),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            minimumSize: const Size(double.infinity, 0),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          child: const Text(
-                            'Confirm & Save',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: state.extractedShifts.isEmpty
+                                ? null
+                                : () => _confirmAndSave(context, ref),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: AppColors.surface,
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text(
+                              'Confirm & Save',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+      ),
     );
   }
 }
