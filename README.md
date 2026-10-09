@@ -8,7 +8,7 @@
 
 **Presentation slides:** _coming soon_
 
-**Square image:** ![ShiftSnap](docs/assets/square-image.png)
+**Square image:** ![ShiftSnap](docs/assets/square-image.jpg)
 
 **Course:** Applications Development and Emerging Technologies
 
