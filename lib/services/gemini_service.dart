@@ -19,9 +19,15 @@ class RosterExtractionResult {
 
 /// Sends a roster photo to Gemini and parses out shifts.
 class GeminiService {
-  static const String _model = 'gemini-2.0-flash';
+  static const String _model = 'gemini-3.1-flash-lite';
 
-  static const String _prompt = '''
+  /// Prompt is a getter because it needs today's date at runtime.
+  static String get _prompt {
+    final now = DateTime.now();
+    final today =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+    return '''
 You are extracting shift data from a photo of a printed duty roster.
 
 Return ONLY valid JSON. No prose, no markdown fences, no explanation.
@@ -39,12 +45,18 @@ The JSON schema must be exactly:
   ]
 }
 
-Rules:
+CRITICAL DATE RULES:
+- Today's date is $today.
+- If a roster shows only month and day (e.g. "Oct 9"), you MUST use the year that makes the date fall on or after today.
+- Prefer the current year unless that would put the shift in the past. If the current year would make it past, use next year.
+- NEVER output a year earlier than ${now.year}.
+
+Other rules:
 - If a shift spans midnight (e.g. 22:00 to 06:00), keep both times as-is.
-- If the year is not shown, assume the current year.
 - If you cannot read a value, omit the shift rather than guessing.
 - Do not invent shifts.
 ''';
+  }
 
   /// Extract shifts from a JPEG/PNG byte array.
   Future<RosterExtractionResult> extractShifts(Uint8List imageBytes) async {
@@ -99,7 +111,6 @@ Rules:
 
   RosterExtractionResult _parseResponse(String raw) {
     try {
-      // Strip any accidental markdown fences.
       var cleaned = raw.trim();
       if (cleaned.startsWith('```')) {
         cleaned = cleaned
@@ -131,7 +142,7 @@ Rules:
 
         shifts.add(Shift(
           title: title,
-          date: date,
+          date: _forceFutureYear(date),
           startTime: _normaliseTime(startStr),
           endTime: _normaliseTime(endStr),
           description: description,
@@ -155,7 +166,27 @@ Rules:
     }
   }
 
-  /// Normalise "7:00" → "07:00", "9:5" → "09:05", etc.
+  /// If a parsed date is before today, assume Gemini mis-guessed the year
+  /// and bump it forward until it's in the future.
+  DateTime _forceFutureYear(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    var candidate = date;
+    // Same month/day but ensure the year is >= current year.
+    // If the year is behind, advance one year at a time until future.
+    while (candidate.isBefore(today)) {
+      candidate = DateTime(
+        candidate.year + 1,
+        candidate.month,
+        candidate.day,
+        candidate.hour,
+        candidate.minute,
+      );
+    }
+    return candidate;
+  }
+
   String _normaliseTime(String raw) {
     final parts = raw.split(':');
     if (parts.length != 2) return raw;

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_ce/hive.dart';
@@ -5,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../models/shift.dart';
 import '../providers/roster_provider.dart';
+import '../providers/shift_provider.dart';
 import '../theme/colors.dart';
 import '../theme/text_styles.dart';
 import '../widgets/app_bar.dart';
@@ -42,6 +44,9 @@ class ReviewScreen extends ConsumerWidget {
     final state = ref.read(rosterProvider);
     final box = Hive.box<Shift>('shifts');
 
+    debugPrint('[SAVE] About to save ${state.extractedShifts.length} shifts');
+    debugPrint('[SAVE] Box length BEFORE: ${box.length}');
+
     for (final shift in state.extractedShifts) {
       final confirmed = Shift(
         title: shift.title,
@@ -51,9 +56,13 @@ class ReviewScreen extends ConsumerWidget {
         description: shift.description,
         confirmed: true,
       );
-      await box.add(confirmed);
+      final key = await box.add(confirmed);
+      debugPrint('[SAVE] Saved "${shift.title}" -> key=$key');
     }
 
+
+    ref.read(shiftsVersionProvider.notifier).bump();
+    
     ref.read(rosterProvider.notifier).reset();
 
     if (!context.mounted) return;
@@ -63,7 +72,6 @@ class ReviewScreen extends ConsumerWidget {
     Navigator.of(context).popUntil((r) => r.isFirst);
   }
 
-  /// Called by the back arrow. If there are unsaved shifts, ask first.
   Future<bool> _confirmDiscard(BuildContext context, WidgetRef ref) async {
     final state = ref.read(rosterProvider);
     if (state.extractedShifts.isEmpty) return true;

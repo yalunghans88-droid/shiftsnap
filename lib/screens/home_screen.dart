@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_ce/hive.dart';
@@ -19,10 +20,14 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scaffoldKey = GlobalKey<ScaffoldState>();
-    final nextShift = ref.watch(nextShiftProvider);
-    final upcomingShifts = ref.watch(upcomingShiftsProvider);
+    final allShiftsAsync = ref.watch(allShiftsProvider);
+    final allShifts = allShiftsAsync.value ?? const <Shift>[];
+
+    final nextShift = findNextShift(allShifts);
+    final upcomingShifts = findUpcoming(allShifts, nextShift);
     final hasAnyShift = nextShift != null || upcomingShifts.isNotEmpty;
 
+    
 
     return Scaffold(
       key: scaffoldKey,
@@ -77,6 +82,7 @@ class HomeScreen extends ConsumerWidget {
     );
 
     await Hive.box<Shift>('shifts').add(confirmed);
+    ref.read(shiftsVersionProvider.notifier).bump();
 
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -84,7 +90,6 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  /// Opens a bottom sheet offering Edit and Delete for a saved shift.
   Future<void> _showShiftActions(
     BuildContext context,
     WidgetRef ref,
@@ -155,6 +160,7 @@ class HomeScreen extends ConsumerWidget {
     if (updated == null) return;
 
     await updateShiftInHive(shift, updated);
+    ref.read(shiftsVersionProvider.notifier).bump();
 
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -193,6 +199,7 @@ class HomeScreen extends ConsumerWidget {
     if (confirmed != true) return;
 
     await deleteShiftFromHive(shift.key);
+    ref.read(shiftsVersionProvider.notifier).bump();
 
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(

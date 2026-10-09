@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_ce/hive.dart';
 
@@ -8,21 +10,49 @@ final shiftsBoxProvider = Provider<Box<Shift>>((ref) {
   return Hive.box<Shift>('shifts');
 });
 
-/// A reactive stream of all shifts, sorted chronologically.
-/// Re-emits whenever the Hive box changes (add, update, delete).
-final allShiftsProvider = StreamProvider<List<Shift>>((ref) {
-  final box = ref.watch(shiftsBoxProvider);
-  return box.watch().map((_) {
-    final list = box.values.toList()
-      ..sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
-    return list;
-  });
+/// Internal broadcast stream for reload signals.
+final _shiftsStreamProvider = Provider<StreamController<void>>((ref) {
+  final controller = StreamController<void>.broadcast();
+  ref.onDispose(controller.close);
+  return controller;
 });
 
-/// The next upcoming shift (first shift whose end time is in the future).
-final nextShiftProvider = Provider<Shift?>((ref) {
-  final async = ref.watch(allShiftsProvider);
-  final shifts = async.value ?? const <Shift>[];
+/// Bump this to force all shift views to reload.
+final shiftsVersionProvider = NotifierProvider<ShiftsVersionNotifier, int>(
+  ShiftsVersionNotifier.new,
+);
+
+class ShiftsVersionNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void bump() {
+    state = state + 1;
+    ref.read(_shiftsStreamProvider).add(null);
+  }
+}
+
+/// A reactive stream of all shifts, sorted chronologically.
+final allShiftsProvider = StreamProvider<List<Shift>>((ref) {
+  final box = ref.watch(shiftsBoxProvider);
+  final controller = ref.watch(_shiftsStreamProvider);
+
+  final output = StreamController<List<Shift>>();
+
+  List<Shift> readAll() {
+    return box.values.toList()
+      ..sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
+  }
+
+  output.add(readAll());
+  controller.stream.listen((_) => output.add(readAll()));
+  ref.onDispose(output.close);
+
+  return output.stream;
+});
+
+/// Helper: return the next upcoming shift (or null).
+Shift? findNextShift(List<Shift> shifts) {
   final now = DateTime.now();
   for (final shift in shifts) {
     if (shift.endDateTime.isAfter(now)) {
@@ -30,21 +60,17 @@ final nextShiftProvider = Provider<Shift?>((ref) {
     }
   }
   return null;
-});
+}
 
-/// All upcoming shifts AFTER the next one.
-final upcomingShiftsProvider = Provider<List<Shift>>((ref) {
-  final async = ref.watch(allShiftsProvider);
-  final shifts = async.value ?? const <Shift>[];
-  final next = ref.watch(nextShiftProvider);
+/// Helper: return all upcoming shifts AFTER the next one.
+List<Shift> findUpcoming(List<Shift> shifts, Shift? next) {
   final now = DateTime.now();
-
   return shifts.where((s) {
     if (s.endDateTime.isBefore(now)) return false;
     if (next != null && s.key == next.key) return false;
     return true;
   }).toList();
-});
+}
 
 /// Formatted countdown string for a shift, e.g. "in 2 hours".
 String formatCountdown(Shift shift) {
