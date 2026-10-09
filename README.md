@@ -2,7 +2,7 @@
 
 *A mobile shift scheduler that turns a photo of a printed duty roster into a reminder-filled calendar.*
 
-**Live demo:** _coming soon_
+**Live demo:** https://yalunghans88-droid.github.io/shiftsnap/
 
 **Demo video:** _coming soon_
 
