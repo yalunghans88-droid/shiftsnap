@@ -6,7 +6,7 @@
 
 **Demo video:** _coming soon_
 
-**Presentation slides:** _coming soon_
+**Presentation slides:** [View the slides](docs/presentation.pdf)
 
 **Square image:** ![ShiftSnap](docs/assets/square-image.jpg)
 
