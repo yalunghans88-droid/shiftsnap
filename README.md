@@ -135,13 +135,17 @@ Editing time is free-text. The start and end time fields accept "HH:mm" as a str
 
 Next: a calendar export, iOS permission strings, a home-screen widget showing the next shift, and a small onboarding flow for first-time users.
 
-Project documentation
-Document	
-README	this file
-AI usage	how AI was used, and where it went wrong
-Security checklist	repository security state
-AI use
-https://img.shields.io/badge/built%20with-AI%20assistance-0b5fff
+## Project documentation
+
+| Document | |
+| --- | --- |
+| [Proposal](docs/proposal.pdf) | the problem, users, scope, and storage decision |
+| [Mockup and wireframes](docs/mockup.pdf) | what each screen looks like |
+| [Design system](docs/design-system.pdf) | palette, type, spacing, components |
+| [Security and privacy](SECURITY-CHECKLIST.md) | repository security state |
+| [AI usage](AI-USAGE.md) | how AI was used, and where it went wrong |
+| [Presentation slides](docs/presentation.pdf) | course presentation deck |
+| [Screenshots](docs/assets/) | app screenshots at phone size |
 
 Assistant used: Claude (Anthropic) for architecture discussion, debugging, and documentation structure. A significant part of the scaffolding was AI-assisted — the initial widget structure, the theme files, and the first pass at each screen. I wrote and adjusted the logic that matters: the shift reactivity pattern (manual version-bump because box.watch() is unreliable on Android), the _forceFutureYear guard against Gemini's date guessing, the state management migration to Riverpod 3.0, and the future-date filtering that powers the "Next Shift" hero card.
 
