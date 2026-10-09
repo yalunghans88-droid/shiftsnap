@@ -147,5 +147,6 @@ Assistant used: Claude (Anthropic) for architecture discussion, debugging, and d
 
 Full account in AI-USAGE.md.
 
-Licence
-MIT, see LICENSE.
+## Licence
+
+MIT, see [LICENSE](LICENSE).
