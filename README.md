@@ -3,10 +3,15 @@
 *A mobile shift scheduler that turns a photo of a printed duty roster into a reminder-filled calendar.*
 
 **Live demo:** _coming soon_
+
 **Demo video:** _coming soon_
+
 **Presentation slides:** _coming soon_
-**Square image:** _coming soon_
+
+**Square image:** ![ShiftSnap](docs/assets/square-image.png)
+
 **Course:** Applications Development and Emerging Technologies
+
 **Author:** [yalunghans88-droid](https://github.com/yalunghans88-droid)
 
 ---
