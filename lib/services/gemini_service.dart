@@ -61,7 +61,8 @@ Other rules:
   /// Extract shifts from a JPEG/PNG byte array.
   Future<RosterExtractionResult> extractShifts(Uint8List imageBytes) async {
     try {
-      final apiKey = dotenv.env['GEMINI_API_KEY'];
+      final apiKey = dotenv.maybeGet('GEMINI_API_KEY') ??
+      const String.fromEnvironment('GEMINI_API_KEY');
       if (apiKey == null || apiKey.isEmpty) {
         return RosterExtractionResult(
           shifts: const [],

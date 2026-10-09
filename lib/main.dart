@@ -17,7 +17,13 @@ Future<void> main() async {
   DevicePreview.enable(enabled: !kReleaseMode);
 
   // 2. Load environment variables (.env with GEMINI_API_KEY).
-  await dotenv.load(fileName: '.env');
+  // Load .env if it exists (local dev). On web builds the key comes
+// from --dart-define, so a missing .env is fine.
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (_) {
+    // .env not bundled — fall back to --dart-define (see gemini_service.dart).
+  }
 
   // 3. Initialise Hive and register adapters.
   await Hive.initFlutter();
