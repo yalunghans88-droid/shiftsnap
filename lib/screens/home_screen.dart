@@ -27,8 +27,6 @@ class HomeScreen extends ConsumerWidget {
     final upcomingShifts = findUpcoming(allShifts, nextShift);
     final hasAnyShift = nextShift != null || upcomingShifts.isNotEmpty;
 
-    
-
     return Scaffold(
       key: scaffoldKey,
       backgroundColor: AppColors.surface,
@@ -87,64 +85,6 @@ class HomeScreen extends ConsumerWidget {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Shift added.')),
-    );
-  }
-
-  Future<void> _showShiftActions(
-    BuildContext context,
-    WidgetRef ref,
-    Shift shift,
-  ) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.black26,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  shift.title,
-                  style: AppTextStyles.sectionTitle.copyWith(fontSize: 16),
-                ),
-              ),
-              const SizedBox(height: 8),
-              ListTile(
-                leading: const Icon(Icons.edit, color: AppColors.primary),
-                title: const Text('Edit shift'),
-                onTap: () async {
-                  Navigator.of(sheetContext).pop();
-                  await _editSavedShift(context, ref, shift);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.delete, color: AppColors.error),
-                title: const Text('Delete shift'),
-                onTap: () async {
-                  Navigator.of(sheetContext).pop();
-                  await _confirmDelete(context, ref, shift);
-                },
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
     );
   }
 
@@ -227,7 +167,8 @@ class HomeScreen extends ConsumerWidget {
             NextShiftHeroCard(
               shift: nextShift,
               countdown: formatCountdown(nextShift),
-              onTap: () => _showShiftActions(context, ref, nextShift),
+              onEdit: () => _editSavedShift(context, ref, nextShift),
+              onDelete: () => _confirmDelete(context, ref, nextShift),
             ),
           const SizedBox(height: 24),
           const Padding(
@@ -238,7 +179,8 @@ class HomeScreen extends ConsumerWidget {
           ...upcomingShifts.map(
             (s) => ShiftCard(
               shift: s,
-              onTap: () => _showShiftActions(context, ref, s),
+              onEdit: () => _editSavedShift(context, ref, s),
+              onDelete: () => _confirmDelete(context, ref, s),
             ),
           ),
           const SizedBox(height: 120),
