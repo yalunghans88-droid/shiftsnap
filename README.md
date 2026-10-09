@@ -4,7 +4,7 @@
 
 **Live demo:** https://yalunghans88-droid.github.io/shiftsnap/
 
-**Demo video:** _coming soon_
+**Demo video:** **Demo video:** [Watch the demo](https://drive.google.com/drive/folders/160WKw60N_iAsPOwgPwXkRfF8L1Rg3Gge?usp=sharing)
 
 **Presentation slides:** [View the slides](docs/presentation.pdf)
 
