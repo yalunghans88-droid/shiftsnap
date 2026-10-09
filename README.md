@@ -1,131 +1,146 @@
-<!--
-  This is your project's front page. Replace every placeholder below.
-  It is the first thing your instructor and any future employer will read, and
-  the live link in it is how your project gets opened for grading.
+# ShiftSnap
 
-  New here? Read START-HERE.md first. Delete this comment when you are done.
--->
+*A mobile shift scheduler that turns a photo of a printed duty roster into a reminder-filled calendar.*
 
-# App Name
-
-> One sentence: what this app does, and who it is for.
-
-**Live demo:** https://YOURUSERNAME.github.io/YOUR-REPO/ <!-- GitHub Pages is set up already; replace if you host elsewhere -->
-**Demo video:** `docs/demo.mp4` (link it here once it exists)
-**Course:** Applications Development and Emerging Technologies (6ADET), Holy Angel University
-**Author:** Your Name
-
-This repository lives in the author's own GitHub account and is public on
-purpose. There is no `student.json` here and there should not be one: see
-`docs/06-security-and-privacy.md` for what a public repo means for secrets and
-personal data.
+**Live demo:** _coming soon_
+**Demo video:** _coming soon_
+**Presentation slides:** _coming soon_
+**Square image:** _coming soon_
+**Course:** Applications Development and Emerging Technologies
+**Author:** [yalunghans88-droid](https://github.com/yalunghans88-droid)
 
 ---
 
 ## Screenshots
 
-Put two or three real screenshots at phone size in `docs/assets/`, then replace
-this paragraph with them:
+Captured from the current Flutter build at a phone-sized viewport.
 
-```markdown
-| Home | Detail | Add |
-| --- | --- | --- |
-| ![Home](docs/assets/screen-home.png) | ![Detail](docs/assets/screen-detail.png) | ![Add](docs/assets/screen-add.png) |
-```
+### The four screens
 
-A repo without screenshots reads as abandoned, whatever the code says.
+| Home | Camera |
+| --- | --- |
+| ![Home](docs/assets/screen-home.png) | ![Camera](docs/assets/screen-camera.png) |
+
+| Review | Manual edit |
+| --- | --- |
+| ![Review](docs/assets/screen-review-shift.png) | ![Manual edit](docs/assets/screen-manual-edit-mode.png) |
+
+Additional screenshots: `docs/assets/screen-home-expanded-shift.png`, `docs/assets/screen-settings.png`.
 
 ## What it does
 
-Three to five bullets. What can a user actually do?
-
-- ...
-- ...
-- ...
+- **Reads a printed duty roster from a photo.** The user photographs the roster, and Google Gemini extracts every shift (title, date, start time, end time) into structured data.
+- **Extracts into an editable list, not a fixed answer.** Every extracted shift appears as a card that can be edited, deleted, or have its description added before saving.
+- **Adds shifts manually when needed.** Users who don't want to use the camera — or when Gemini misses a shift — can add one by hand from the Home screen or the Review screen.
+- **Persists shifts locally.** All shifts, roster history, and reminder preferences are stored on the device with Hive. There is no backend and no user account.
+- **Reminds before each shift.** The user picks a reminder lead time (15 / 30 / 60 / 120 / 240 minutes) and the app schedules a local notification before each confirmed shift.
+- **Shows the next shift at a glance.** The Home screen highlights the next upcoming shift in a hero card with a live countdown ("in 2 hours"), followed by a list of what's next.
+- **Guards against bad AI output.** If Gemini returns a date in the past, the app silently rolls the year forward so the shift still appears. If the API is unreachable, it fails cleanly with an error message instead of crashing.
 
 ## Built with
 
 | | |
 | --- | --- |
-| Framework | Flutter (Dart) |
-| State | `setState` / provider / riverpod (say which) |
-| Storage | shared_preferences / Hive / Drift / Firebase / Supabase / other |
-| Other packages | list the ones that matter, with a word on why |
+| Framework | Flutter (Dart), Material 3 |
+| State | Riverpod 3.0 (`Notifier` + `NotifierProvider`) |
+| Storage | Hive CE (community fork of Hive) |
+| AI | `google_generative_ai` — Gemini extracts shifts from roster photos |
+| Camera | `camera` package — live preview with overlay |
+| Notifications | `flutter_local_notifications` + `timezone` |
+| Config | `flutter_dotenv` — loads `GEMINI_API_KEY` from a gitignored `.env` file |
 
 ## Running it yourself
 
 ```bash
+git clone https://github.com/yalunghans88-droid/shiftsnap.git
+cd shiftsnap
 flutter pub get
-cp .env.example .env      # only if your app needs keys, see below
-flutter run -d web-server --web-port 8080
-```
+dart run build_runner build --delete-conflicting-outputs
+flutter run
 
-Then open http://localhost:8080. Requires Flutter (run `flutter --version` and
-put yours here).
+Verified with Flutter 3.47.5 (stable). Android SDK and an Android device or emulator are needed for the full camera flow — the camera package does not work in a browser.
 
-### Environment variables
+Optional: UI-only preview on web
 
-This project reads its configuration from a `.env` file that is **not** in the
-repository. Copy `.env.example`, fill in your own values, and never commit the
-result.
+flutter run -d chrome --web-port=5000
 
-| Variable | What it is | Where to get one |
-| --- | --- | --- |
-| `EXAMPLE_API_KEY` | ... | ... |
+The app renders, but the camera screen shows "No camera available on this device." To test the full capture → extract → review flow, run on Android or iOS.
 
-## Privacy and secrets
+Environment variables
+This project reads its Gemini API key from a .env file that is not in the repository. Create it locally:
+# In the project root:
+echo "GEMINI_API_KEY=your_api_key_here" > .env
 
-Required section. Two or three honest sentences:
+Then verify Git ignores it:
+git check-ignore .env    # should print ".env"
 
-- What personal data this app stores, if any, and where it goes.
-- Where the secrets live (`.env` locally, repository secrets in the deploy
-  workflow) and what protects the data on the service side (Firestore rules,
-  Supabase RLS, or "nothing leaves the device").
-- Confirm that all sample data, screenshots and the video contain **no real
-  personal information**.
+Get an API key at https://aistudio.google.com/app/apikey. Never commit the real key.
 
-## Project documentation
+Variable	What it is	Where to get one
+GEMINI_API_KEY	Google Gemini API key, used to extract shifts from roster photos	https://aistudio.google.com/app/apikey
+If the key is missing or the API call fails, the app shows a friendly error and the user can fall back to adding shifts manually.
 
-| Document | |
-| --- | --- |
-| [Proposal](docs/01-proposal.md) | the problem, the users, the scope |
-| [Mockup and wireframes](docs/02-mockup.md) | what it looks like, and the screen flow |
-| [Design system](docs/03-design-system.md) | colors, type, spacing, components |
-| [Weekly reports](docs/04-weekly-reports.md) | what happened each week |
-| [Demo video](docs/05-demo-video.md) | the recording and what it shows |
-| [Start here](START-HERE.md) | how this repo works (delete once you have read it) |
-| [Security and privacy](docs/06-security-and-privacy.md) | the checklist, filled in |
+Privacy and secrets
+The current build is local-first. Shifts, roster history, and reminder preferences live on the device inside a Hive database and are never sent to a server. There is no user account, no analytics, and no cloud sync.
 
-## Status and what is next
+The Gemini integration reads its API key from .env locally and the file is gitignored. Roster photos are sent to the Gemini API only when the user explicitly taps the shutter, and no photos are stored on any server — extraction is stateless.
 
-Be honest. What works, what is half done, what you would build next. An honest
-"known issues" section reads better than a claim the reader disproves in thirty
-seconds.
+All sample data, screenshots, and the demo video contain no real personal information. The roster photos used for testing were printed documents with fictional names.
 
-## Credits
+lib/
+├── main.dart                          # app entry, Hive init, Riverpod scope
+├── models/
+│   ├── shift.dart                     # Shift entity (title, date, times, confirmed)
+│   ├── scanned_roster.dart            # Roster metadata (image path, date scanned)
+│   └── user_preferences.dart          # Reminder settings
+├── providers/
+│   ├── shift_provider.dart            # reactive shift list + version bump
+│   ├── roster_provider.dart           # in-progress extraction state
+│   └── preferences_provider.dart      # reminder preference
+├── screens/
+│   ├── home_screen.dart               # hero card + upcoming shifts + FABs
+│   ├── camera_screen.dart             # viewfinder + shutter
+│   └── review_screen.dart             # extracted shifts + edit/delete + save
+├── services/
+│   ├── gemini_service.dart            # Gemini API calls + JSON parsing
+│   ├── storage_service.dart           # Hive box wrappers
+│   └── notification_service.dart      # local shift reminders
+├── widgets/
+│   ├── app_bar.dart                   # global Deep Navy app bar
+│   ├── shift_card.dart                # hero + standard card variants
+│   ├── edit_modal.dart                # pop-up edit form
+│   ├── empty_state.dart               # "Capture your first Snap now"
+│   └── settings_drawer.dart           # hamburger drawer with reminder settings
+└── theme/
+    ├── colors.dart                    # Deep Navy, Warm Amber, etc.
+    └── text_styles.dart               # type scale
 
-- Packages: see `pubspec.yaml`
-- Assets, icons, 3D models, sounds: name the author and the licence for each
-- People who helped, and how
+    Known issues and next steps
+Android build requires SDK setup. The camera flow runs on real Android devices but requires Java, the Android SDK command-line tools, and the NDK licenses accepted. Setup is documented but not automated.
 
-## AI use
+Gemini sometimes returns wrong years. Mitigated by a _forceFutureYear helper that advances past dates forward, but the prompt could still be tightened with few-shot examples.
 
-If you used AI while building this, say so here. Honest disclosure is the
-standard in this course and increasingly outside it, and reporting heavy use
-accurately costs you nothing.
+No cloud sync. All data is device-local. A shift added on one phone doesn't appear on another.
 
-This section is the last 10 points of the finals badge, and it wants three
-things:
+Notifications are untested on iOS. The Android schedule path works; iOS background restrictions may require additional setup.
 
-![Built with AI assistance](https://img.shields.io/badge/built%20with-AI%20assistance-0b5fff)
+No calendar export yet. Shifts can be added inside the app but not synced to the device's native calendar.
 
-- the badge above, or one you like better
-- a line naming which assistant you used and how much of the work it touched
-- a link to [AI-USAGE.md](AI-USAGE.md), where the full account lives
+Editing time is free-text. The start and end time fields accept "HH:mm" as a string. A proper time picker would reduce user error.
 
-Keep the detail in `AI-USAGE.md` rather than here. This section is the summary a
-visitor reads; that file is the record the badge is graded from.
+Next: a calendar export, iOS permission strings, a home-screen widget showing the next shift, and a small onboarding flow for first-time users.
 
-## Licence
+Project documentation
+Document	
+README	this file
+AI usage	how AI was used, and where it went wrong
+Security checklist	repository security state
+AI use
+https://img.shields.io/badge/built%20with-AI%20assistance-0b5fff
 
-MIT, see [LICENSE](LICENSE). Change it if you want different terms.
+Assistant used: Claude (Anthropic) for architecture discussion, debugging, and documentation structure. A significant part of the scaffolding was AI-assisted — the initial widget structure, the theme files, and the first pass at each screen. I wrote and adjusted the logic that matters: the shift reactivity pattern (manual version-bump because box.watch() is unreliable on Android), the _forceFutureYear guard against Gemini's date guessing, the state management migration to Riverpod 3.0, and the future-date filtering that powers the "Next Shift" hero card.
+
+Full account in AI-USAGE.md.
+
+Licence
+MIT, see LICENSE.
